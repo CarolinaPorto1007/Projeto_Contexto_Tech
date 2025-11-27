@@ -1,4 +1,7 @@
-Flask==3.0.3
-spacy==3.7.5
-requests==2.32.3
-numpy==1.26.4
+Flask==3.0.0
+gensim==4.3.2
+numpy==1.26.0
+scipy==1.11.4
+requests==2.31.0
+beautifulsoup4==4.12.2
+wikipedia==1.4.0

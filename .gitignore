@@ -1,2 +1,26 @@
+# Ambiente virtual
 venv/
+.env/
+.venv/
 
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Diretórios de cache do Python
+.pytest_cache/
+.python_cache/
+
+
+
+# Arquivos temporários
+*.log
+*.tmp
+*.swp
+
+
+# Arquivos do Word2Vec
+*.kv
+*.model
