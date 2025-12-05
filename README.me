@@ -1,30 +1,37 @@
-Projeto Flask com Word2Vec
+##📌 Sobre o Projeto
 
-Este projeto utiliza Flask para criar uma API que consulta um modelo Word2Vec treinado especificamente para textos da área de tecnologia.
-A API recebe palavras e retorna informações de similaridade e contexto.
+Este projeto foi desenvolvido com o objetivo de criar um jogo interativo baseado no tema Tecnologia, utilizando conceitos de similaridade entre vetores para gerar perguntas, respostas ou interações inteligentes dentro do jogo.
 
-Como rodar o projeto
+A proposta é aplicar técnicas de comparação vetorial — como similaridade de cosseno ou distância euclidiana — para analisar relações entre termos, temas ou conteúdos, permitindo uma experiência dinâmica e personalizada ao jogador.
+
+O projeto integra lógica de programação, manipulação de dados e mecânicas de jogo para criar uma aplicação educativa e divertida, voltada para estudantes interessados em tecnologia e seus conceitos fundamentais.
+
+## 🛠️ Como Rodar o Projeto
+
+Siga as etapas abaixo para executar o projeto corretamente no seu ambiente local:
+
 1. Criar o ambiente virtual
 python3 -m venv venv
 
+
+Isso cria um ambiente isolado para instalar as dependências sem afetar o sistema.
+
 2. Ativar o ambiente virtual
-
-Linux/macOS
-
+Linux / macOS
 source venv/bin/activate
 
-
 Windows
-
 venv\Scripts\activate
 
 3. Instalar as dependências
+
 pip install -r requirements.txt
 
 4. Executar o servidor Flask
-flask run
 
+python app.py
 
-Ou, caso o projeto use um arquivo principal (ex.: main.py):
+Após isso, o servidor iniciará e você poderá acessar no navegador:
 
-python main.py
+http://127.0.0.1:5000/
+
