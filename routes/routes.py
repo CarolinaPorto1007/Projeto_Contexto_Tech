@@ -5,6 +5,8 @@ import unicodedata
 from datetime import datetime, timedelta
 import hashlib
 
+# Arquivos auxiliares
+from routes import teste_filtro
 
 """
 ===========================================================
@@ -403,6 +405,12 @@ def tentar():
 
     # Obtém a palavra tentada
     tentativa = request.json.get('palavra', '').lower().strip()
+
+    # --- AQUI ENTRA A MÁGICA ---
+    # Usa a função do seu arquivo auxiliar
+    if not teste_filtro.palavra_existe(tentativa):
+        return jsonify({"erro": "Palavra desconhecida ou inválida! Verifique a ortografia."})
+    # ---------------------------
     
     if not tentativa:
         return jsonify({"erro": "Digite uma palavra válida."})
