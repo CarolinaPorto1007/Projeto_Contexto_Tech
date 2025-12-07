@@ -152,10 +152,26 @@ def remover_diminutivo(palavra):
     # Se não for diminutivo ou se a raiz não existir (ex: 'caminho'), retorna original
     return palavra
 
-
+def remover_aumentativo(palavra):
+    """
+    Remove aumentativos usando a inteligência do spaCy (Lema).
+    Isso impede que 'Melão' vire 'Melo', mas permite 'Carrão' virar 'Carro'.
+    """
+    if nlp is None: return palavra
+    if not palavra.endswith("ão"): return palavra # Otimização simples
+    
+    doc = nlp(palavra)
+    lemma = doc[0].lemma_
+    
+    # Se o lema for diferente da palavra original (ex: carrão -> carro), retorna o lema.
+    # Se for igual (ex: melão -> melão), retorna a palavra original.
+    if lemma.lower() != palavra.lower():
+        return lemma
+        
+    return palavra
 def obter_singular(palavra):
     """
-    Normaliza singular e gênero.
+    Normaliza singular, gênero, diminutivo e aumentativo.
     """
     if nlp is None: return palavra
     
@@ -163,30 +179,36 @@ def obter_singular(palavra):
     doc = nlp(palavra)
     token = doc[0]
     
-    # --- 1. Singular via spaCy ---
+    # 1. Singular via spaCy (Lematização básica)
     sugestao_singular = token.lemma_
 
     if sugestao_singular == palavra:
         resultado = palavra
     else:
-        doc_teste = nlp(sugestao_singular)
-        if doc_teste[0].is_oov:
-            resultado = palavra
-        else:
+        # Prova Real: garante que o singular sugerido existe
+        if not nlp(sugestao_singular)[0].is_oov:
             resultado = sugestao_singular
+        else:
+            resultado = palavra
 
-    # --- 2. Correção de Plural Feminino ('as') ---
+    # 2. Correção de Plural Feminino ('as') - Ex: "Coisas" -> "Coisa"
     if resultado.endswith('as'):
         sem_s = resultado[:-1] 
         if not nlp(sem_s)[0].is_oov:
             resultado = sem_s
 
-    # --- 3. Masculinização ('a' -> 'o') ---
+    # 3. Masculinização Controlada ('a' -> 'o' ou corte)
     if resultado.endswith('a'):
-        tentativa_o = resultado[:-1] + 'o'
-        if len(tentativa_o) > 3 and not nlp(tentativa_o)[0].is_oov:
-            resultado = tentativa_o 
+        # Tenta trocar 'a' por 'o' apenas em sufixos seguros
+        # Evita Porta -> Porto, mas permite Usuária -> Usuário
+        sufixos_seguros = ('eira', 'ria', 'na', 'oa') 
+        
+        if resultado.endswith(sufixos_seguros):
+            tentativa_o = resultado[:-1] + 'o'
+            if not nlp(tentativa_o)[0].is_oov:
+                resultado = tentativa_o
         else:
+            # Tenta apenas cortar o 'a' (Programadora -> Programador)
             tentativa_cortada = resultado[:-1]
             terminacoes_validas = ('r', 's', 'z', 'l', 'm', 'n')
             
@@ -195,5 +217,11 @@ def obter_singular(palavra):
                 and tentativa_cortada.endswith(terminacoes_validas)):
                 resultado = tentativa_cortada
 
-    # --- 4. CHAMA A NOVA FUNÇÃO AQUI NO FINAL 👇 ---
-    return remover_diminutivo(resultado)
+    # 4. Processamento em Cadeia: Diminutivo -> Aumentativo
+    # Primeiro remove diminutivos (ex: carrinhos -> carrinho -> carro)
+    resultado = remover_diminutivo(resultado)
+    
+    # Depois verifica aumentativos (ex: pezão -> pé, mas melão -> melão)
+    resultado = remover_aumentativo(resultado)
+
+    return resultado

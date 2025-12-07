@@ -407,16 +407,18 @@ def tentar():
     tentativa = request.json.get('palavra', '').lower().strip()
 
 
+    tentativa = teste_filtro.remover_aumentativo(tentativa)
+
+    tentativa = teste_filtro.remover_diminutivo(tentativa)
+
+    tentativa = teste_filtro.obter_singular(tentativa)
+
     if teste_filtro.possui_caracteres_invalidos(tentativa):
         return jsonify({"erro": "Não utilize números ou símbolos, apenas letras!"})
 
     if not teste_filtro.palavra_existe(tentativa):
         return jsonify({"erro": "Palavra desconhecida ou inválida! Verifique a ortografia."})
     
-    tentativa = teste_filtro.obter_singular(tentativa)
-
-    tentativa = teste_filtro.remover_diminutivo(tentativa)
-
 
     if not tentativa:
         return jsonify({"erro": "Digite uma palavra válida."})
