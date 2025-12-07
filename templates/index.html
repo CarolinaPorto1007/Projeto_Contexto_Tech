@@ -17,6 +17,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             min-height: 100vh;
             display: flex;
+            overflow: hidden;
             justify-content: center;
             align-items: center;
             padding: 20px;
@@ -32,7 +33,7 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            /* background: radial-gradient(circle, rgba(255,0,0,1) 0%, transparent 70%); */
             animation: rotate 20s linear infinite;
         }
 
@@ -454,8 +455,8 @@
     <!-- Botões superiores -->
     <div class="top-buttons">
         <button class="icon-btn" onclick="openModal('howToPlay')" title="Como Jogar">❓</button>
-        <button class="icon-btn" onclick="openModal('hint')" title="Dica">💡</button>
-        <button class="icon-btn" onclick="openModal('giveUp')" title="Desistir">🏳️</button>
+        <button class="icon-btn" onclick="openModal('hint')" id="hintButton" title="Dica">💡</button>
+        <button class="icon-btn" onclick="openModal('giveUp')" id="giveUpButton" title="Desistir">🏳️</button>
     </div>
 
     <!-- Container principal -->

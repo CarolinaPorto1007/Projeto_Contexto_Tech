@@ -5,7 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBar = document.getElementById('progressBar');
     const tentativas = document.getElementById('tentativas');
     const contador = document.getElementById('contador');
-    
+    const hintButton = document.getElementById('hintButton');
+    const giveUpButton = document.getElementById('giveUpButton');
+
     let totalTentativas = 0;
     let jogoFinalizado = false;
 
@@ -124,6 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         input.disabled = true;
         button.disabled = true;
+        hintButton.remove();
+        giveUpButton.remove();
         button.style.opacity = '0.5';
         button.style.cursor = 'not-allowed';
 
@@ -174,14 +178,14 @@ function openModal(modalName) {
 function closeModal(modalName) {
     const modal = document.getElementById(`modal${modalName.charAt(0).toUpperCase() + modalName.slice(1)}`);
     modal.classList.remove('active');
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = 'hidden';
 }
 
 // Fechar modal clicando fora
 window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = 'hidden';
     }
 });
 
@@ -233,6 +237,8 @@ async function revealWord() {
             // Desabilita o jogo
             document.getElementById('palavraInput').disabled = true;
             document.getElementById('tentarBtn').disabled = true;
+            hintButton.remove();
+            giveUpButton.remove();
             document.getElementById('tentarBtn').style.opacity = '0.5';
             document.getElementById('feedback').textContent = '⏰ Volte amanhã para uma nova palavra!';
             document.getElementById('feedback').style.color = '#00d4ff';
@@ -254,6 +260,8 @@ async function carregarStats() {
                 `✅ Desafio completo! Volte em ${data.proximo_reset} para uma nova palavra.`;
             document.getElementById('feedback').style.color = '#00d4ff';
             document.getElementById('palavraInput').disabled = true;
+            hintButton.remove();
+            giveUpButton.remove();
             document.getElementById('tentarBtn').disabled = true;
             document.getElementById('tentarBtn').style.opacity = '0.5';
         }
@@ -269,6 +277,6 @@ document.addEventListener('keydown', (e) => {
         modals.forEach(modal => {
             modal.classList.remove('active');
         });
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = 'hidden';
     }
 });
