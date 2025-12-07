@@ -5,6 +5,8 @@ import unicodedata
 from datetime import datetime, timedelta
 import hashlib
 
+# Arquivos auxiliares
+from routes import teste_filtro
 
 """
 ===========================================================
@@ -403,7 +405,21 @@ def tentar():
 
     # Obtém a palavra tentada
     tentativa = request.json.get('palavra', '').lower().strip()
+
+
+    tentativa = teste_filtro.remover_aumentativo(tentativa)
+
+    tentativa = teste_filtro.remover_diminutivo(tentativa)
+
+    tentativa = teste_filtro.obter_singular(tentativa)
+
+    if teste_filtro.possui_caracteres_invalidos(tentativa):
+        return jsonify({"erro": "Não utilize números ou símbolos, apenas letras!"})
+
+    if not teste_filtro.palavra_existe(tentativa):
+        return jsonify({"erro": "Palavra desconhecida ou inválida! Verifique a ortografia."})
     
+
     if not tentativa:
         return jsonify({"erro": "Digite uma palavra válida."})
     
@@ -435,6 +451,7 @@ def tentar():
     response = {
         "similaridade": similaridade,
         "venceu": venceu,
+        "palavra_exibida": tentativa,
         "palavra_secreta": palavra_secreta if venceu else None,
         "total_tentativas": len(tentativas_historico)
     }

@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
             contador.textContent = totalTentativas;
 
             // Adiciona ao histórico
-            adicionarTentativa(palavra, data.similaridade);
+            adicionarTentativa(data.palavra_exibida || palavra, data.similaridade);
 
             // Atualiza barra de progresso
             atualizarProgressBar(data.similaridade);
