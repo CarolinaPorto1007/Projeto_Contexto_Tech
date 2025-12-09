@@ -7,6 +7,7 @@ import hashlib
 
 # Arquivos auxiliares
 from routes import teste_filtro
+from routes.model_loader import word2vec
 
 """
 ===========================================================
@@ -98,39 +99,6 @@ RESUMO TÉCNICO FINAL
 """
 
 main_bp = Blueprint('main', __name__)
-print("📚 Carregando modelo Word2Vec nilc-nlp/fasttext-skip-gram-300d...")
-
-try:
-    from huggingface_hub import hf_hub_download
-    from safetensors.numpy import load_file
-    from gensim.models import KeyedVectors
-
-    # Baixa embeddings
-    emb_path = hf_hub_download(
-        repo_id="nilc-nlp/fasttext-skip-gram-300d",
-        filename="embeddings.safetensors"
-    )
-    data = load_file(emb_path)
-    vectors = data["embeddings"]
-
-    # Baixa vocabulário
-    vocab_path = hf_hub_download(
-        repo_id="nilc-nlp/fasttext-skip-gram-300d",
-        filename="vocab.txt"
-    )
-    with open(vocab_path, "r", encoding="utf-8") as f:
-        vocab = [line.strip() for line in f]
-
-    # Cria KeyedVectors
-    kv = KeyedVectors(vector_size=vectors.shape[1])
-    kv.add_vectors(vocab, vectors)
-
-    word2vec = kv
-
-    print(f"✅ Modelo carregado com {len(word2vec)} palavras!")
-except Exception as e:
-    print(f"❌ Erro ao carregar modelo: {e}")
-    word2vec = None
 
 # 📚 Lista de palavras ÚNICAS de tecnologia (sem espaços)
 PALAVRAS_TECNOLOGIA = [
@@ -429,7 +397,6 @@ def tentar():
 
     # Obtém a palavra tentada
     tentativa = request.json.get('palavra', '').lower().strip()
-
 
     tentativa = teste_filtro.remover_aumentativo(tentativa)
 
