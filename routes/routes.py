@@ -454,35 +454,6 @@ def tentar():
     
     return jsonify(response)
 
-# @main_bp.route('/dica', methods=['GET'])
-# def dica():
-#     """Retorna uma dica sobre a palavra secreta"""
-#     verificar_reset_diario()
-    
-#     if jogo_finalizado:
-#         return jsonify({"erro": "Você já completou o desafio de hoje!"})
-    
-#     try:
-#         if word2vec and normalizar_texto(palavra_secreta) in word2vec:
-#             # Busca palavras mais similares no modelo
-#             palavra_norm = normalizar_texto(palavra_secreta)
-            
-#             if palavra_norm in word2vec:
-#                 similares = word2vec.most_similar(palavra_norm, topn=5)
-#                 palavra_similar = similares[0][0].replace('_', ' ')
-#                 return jsonify({
-#                     "dica": f"💡 A palavra é similar a: {palavra_similar}"
-#                 })
-        
-#         # Dica genérica
-#         dica_texto = f"💡 A palavra tem {len(palavra_secreta)} caracteres"
-        
-#         return jsonify({"dica": dica_texto})
-        
-#     except Exception as e:
-#         print(f"❌ Erro ao gerar dica: {e}")
-#         return jsonify({"dica": f"💡 A palavra tem {len(palavra_secreta)} caracteres"})
-
 @main_bp.route('/reiniciar', methods=['POST'])
 def reiniciar():
     """Não permite reiniciar - apenas no dia seguinte"""
