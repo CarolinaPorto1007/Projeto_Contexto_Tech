@@ -372,19 +372,24 @@ def inicializar_jogo():
     
     palavras = set()
 
+    max_sim = None
+
     with open("saida.txt", "w", encoding="utf8") as f:
         i = 0
         for palavra, similaridade in word2vec.most_similar(palavra_secreta, topn=720000):
             formatada = input_filter.formatar_palavra(palavra, False)
 
             if is_valida(formatada) and formatada not in palavras:
+                if (max_sim is None):
+                    max_sim = similaridade
+
                 i += 1
                 palavras.add(formatada)
 
-                linha = f"{i} - {formatada} - {similaridade * 100:.2f}\n"
+                linha = f"{formatada}, {(similaridade/max_sim) * 100:.2f}\n"
                 f.write(linha)
 
-                print(linha, end="")
+                # print(linha, end="")
 
 
 def verificar_reset_diario():
