@@ -1,14 +1,7 @@
-import spacy
+import bisect
+import os
 
-# Carrega o modelo
-try:
-    print("📚 Carregando validador ortográfico (spaCy)...")
-    nlp = spacy.load("pt_core_news_md")
-except OSError:
-    nlp = None
-
-# 📝 LISTA VIP: Únicas palavras curtas (menos de 4 letras) permitidas
-# Adicione aqui qualquer sigla de tecnologia que lembrar.
+# SIGLAS VÁLIDAS
 WHITELIST_CURTAS = {
     "api", "app", "web", "bot", "bug", "dev", "git", "hub", "net", 
     "sql", "ssl", "ssh", "tcp", "udp", "vpn", "wan", "lan", "dns",
@@ -18,210 +11,56 @@ WHITELIST_CURTAS = {
     "ux",  "ui",  "seo", "aws", "gcp", "azure", "poo", "mvc", "dao"
 }
 
+# DEFINIÇÃO DO CAMINHO DO ARQUIVO DE PALAVRAS
+DIRETORIO_SCRIPT = os.path.dirname(os.path.abspath(__file__))
+CAMINHO_ARQUIVO = os.path.join(DIRETORIO_SCRIPT, "..", "base_palavras", "com_acento.txt")
+CAMINHO_ARQUIVO = os.path.normpath(CAMINHO_ARQUIVO)
+
+
+# CARREGAMENTO DO BANCO DE DADOS
+try:
+    with open(CAMINHO_ARQUIVO, "r", encoding="utf-8") as f:
+        # Carrega removendo espaços e quebras de linha
+        TABELA_PALAVRAS_ORDENADAS = [linha.strip() for linha in f]
+    print(f"📚 Tabela de dados carregada: {len(TABELA_PALAVRAS_ORDENADAS)} palavras.")
+except FileNotFoundError:
+    print(f"❌ ERRO CRÍTICO: Arquivo não encontrado no caminho:\n{CAMINHO_ARQUIVO}")
+    TABELA_PALAVRAS_ORDENADAS = []
+
+
+
+
+# BUSCA BINÁRIA NA TABELA DE PALAVRAS
 def palavra_existe(palavra):
     """
-    Filtro híbrido:
-    - Palavras curtas (< 4): Só aceita se estiver na whitelist manual.
-    - Palavras longas (>= 4): Aceita se o spaCy reconhecer.
+    Verifica se a palavra existe no banco de dados usando Busca Binária.
+    Complexidade: O(log N) - Extremamente rápido.
     """
-    if nlp is None: return True
-
-    palavra = palavra.strip().lower()
-
-    print(palavra)
-
-    # REGRA 1: Filtro de tamanho e Whitelist
-    # Se for menor que 4 letras, SÓ passa se estiver na nossa lista VIP.
-    # Isso bloqueia: "asf", "wer", "dg", "se", "re"
-    if len(palavra) < 4:
-        if palavra in WHITELIST_CURTAS:
-            return True
-        else:
-            return False
-
-    # REGRA 2: Verificação do SpaCy para palavras normais (4+ letras)
-    doc = nlp(palavra)
-    token = doc[0]
-
-    # Rejeita se não existe no dicionário (is_oov) ou se não é letra (123, ???)
-    if token.is_oov or not token.is_alpha:
+    if not TABELA_PALAVRAS_ORDENADAS:
         return False
         
-    # Rejeita se o spaCy classificar como "X" (indefinido/ruído)
-    if token.pos_ == "X":
-        return False
-
-    return True
-
-def obter_singular(palavra):
-    """
-    Normaliza singular e gênero com proteção contra "Testa" -> "Testo".
-    """
-    if nlp is None: return palavra
+    # Normaliza a entrada: tudo minúsculo e sem espaços nas pontas
+    palavra = palavra.lower().strip()
     
-    palavra = palavra.strip().lower()
-    doc = nlp(palavra)
-    token = doc[0]
+    # O bisect_left encontra a posição de inserção para manter a ordem
+    index = bisect.bisect_left(TABELA_PALAVRAS_ORDENADAS, palavra)
     
-    # 1. Singular via spaCy
-    sugestao_singular = token.lemma_
-
-    if sugestao_singular == palavra:
-        resultado = palavra
-    else:
-        # Prova Real
-        doc_teste = nlp(sugestao_singular)
-        if doc_teste[0].is_oov:
-            resultado = palavra
-        else:
-            resultado = sugestao_singular
-
-    # 2. Correção de Plural Feminino ('as')
-    if resultado.endswith('as'):
-        sem_s = resultado[:-1] 
-        if not nlp(sem_s)[0].is_oov:
-            resultado = sem_s
-
-    # 3. Masculinização Controlada
-    if resultado.endswith('a'):
+    # Se o índice retornado estiver dentro da lista e a palavra for igual, ACHAMOS!
+    if index < len(TABELA_PALAVRAS_ORDENADAS) and TABELA_PALAVRAS_ORDENADAS[index] == palavra:
+        return palavra
         
-        # A) Tenta apenas REMOVER o 'a' (Programadora -> Programador)
-        # É a regra mais segura.
-        tentativa_cortada = resultado[:-1]
-        terminacoes_validas = ('r', 's', 'z', 'l', 'm', 'n')
-        
-        if (len(tentativa_cortada) > 2 
-            and not nlp(tentativa_cortada)[0].is_oov 
-            and tentativa_cortada.endswith(terminacoes_validas)):
-            return tentativa_cortada
-            
-        # B) Tenta trocar 'a' por 'o', MAS SÓ PARA SUFIXOS SEGUROS
-        # Isso evita Testa->Testo, Mesa->Meso, Porta->Porto
-        # Aceita: Engenheira->Engenheiro, Usuária->Usuário, Aluna->Aluno
-        sufixos_seguros = ('eira', 'ria', 'na', 'oa')
-        
-        if resultado.endswith(sufixos_seguros):
-            tentativa_o = resultado[:-1] + 'o'
-            if not nlp(tentativa_o)[0].is_oov:
-                return tentativa_o
+    return False
 
-    return resultado
+# TESTES RÁPIDOS
+def testar_palavra_existe():
+    print("\n\n==================== TESTANDO PALAVRA_EXISTE ====================\n")
 
-def possui_caracteres_invalidos(palavra):
-    """
-    Retorna True se a palavra tiver números ou símbolos (ex: 't3ste', 'c++', '@mail').
-    Retorna False se tiver apenas letras (ex: 'teste', 'email').
-    """
-    palavra = palavra.strip()
-    
-    # O método .isalpha() do Python retorna False se houver 
-    # qualquer coisa que não seja letra (número, espaço, símbolo).
-    if not palavra.isalpha():
-        return True # Tem erro (caractere inválido)
-        
-    return False # Está limpa
+    testes = ["casa", "Casa s", "abacaxi", "xpto123"]
+    for t in testes:
+        resultado = "✅ Existe" if palavra_existe(t) else "❌ Não existe"
+        print(f"Palavra '{t}': {resultado}")
 
-def remover_diminutivo(palavra):
-    """
-    Remove sufixos de diminutivo (-inho, -zinho) se a raiz for uma palavra válida.
-    Ex: 'computadorzinho' -> 'computador', 'carrinho' -> 'carro'.
-    """
-    if nlp is None: return palavra
-    
-    # Caso A: Sufixo -zinho / -zinha (Remove 5 letras)
-    # Ex: Computadorzinho -> Computador
-    if palavra.endswith(('zinho', 'zinha')):
-        raiz = palavra[:-5]
-        if not nlp(raiz)[0].is_oov:
-            return raiz
-            
-    # Caso B: Sufixo -inho (Remove 4 letras e tenta por 'o')
-    # Ex: Carrinho -> Carr -> Carro
-    elif palavra.endswith('inho'):
-        raiz = palavra[:-4] + 'o'
-        if not nlp(raiz)[0].is_oov:
-            return raiz
+if __name__ == "__main__":
+    # testar_palavra_existe()
 
-    # Caso C: Sufixo -inha (Remove 4 letras e tenta por 'a')
-    # Ex: Casinha -> Cas -> Casa
-    elif palavra.endswith('inha'):
-        raiz = palavra[:-4] + 'a'
-        if not nlp(raiz)[0].is_oov:
-            return raiz
-            
-    # Se não for diminutivo ou se a raiz não existir (ex: 'caminho'), retorna original
-    return palavra
-
-def remover_aumentativo(palavra):
-    """
-    Remove aumentativos usando a inteligência do spaCy (Lema).
-    Isso impede que 'Melão' vire 'Melo', mas permite 'Carrão' virar 'Carro'.
-    """
-    if nlp is None: return palavra
-    if not palavra.endswith("ão"): return palavra # Otimização simples
-    
-    doc = nlp(palavra)
-    lemma = doc[0].lemma_
-    
-    # Se o lema for diferente da palavra original (ex: carrão -> carro), retorna o lema.
-    # Se for igual (ex: melão -> melão), retorna a palavra original.
-    if lemma.lower() != palavra.lower():
-        return lemma
-        
-    return palavra
-def obter_singular(palavra):
-    """
-    Normaliza singular, gênero, diminutivo e aumentativo.
-    """
-    if nlp is None: return palavra
-    
-    palavra = palavra.strip().lower()
-    doc = nlp(palavra)
-    token = doc[0]
-    
-    # 1. Singular via spaCy (Lematização básica)
-    sugestao_singular = token.lemma_
-
-    if sugestao_singular == palavra:
-        resultado = palavra
-    else:
-        # Prova Real: garante que o singular sugerido existe
-        if not nlp(sugestao_singular)[0].is_oov:
-            resultado = sugestao_singular
-        else:
-            resultado = palavra
-
-    # 2. Correção de Plural Feminino ('as') - Ex: "Coisas" -> "Coisa"
-    if resultado.endswith('as'):
-        sem_s = resultado[:-1] 
-        if not nlp(sem_s)[0].is_oov:
-            resultado = sem_s
-
-    # 3. Masculinização Controlada ('a' -> 'o' ou corte)
-    if resultado.endswith('a'):
-        # Tenta trocar 'a' por 'o' apenas em sufixos seguros
-        # Evita Porta -> Porto, mas permite Usuária -> Usuário
-        sufixos_seguros = ('eira', 'ria', 'na', 'oa') 
-        
-        if resultado.endswith(sufixos_seguros):
-            tentativa_o = resultado[:-1] + 'o'
-            if not nlp(tentativa_o)[0].is_oov:
-                resultado = tentativa_o
-        else:
-            # Tenta apenas cortar o 'a' (Programadora -> Programador)
-            tentativa_cortada = resultado[:-1]
-            terminacoes_validas = ('r', 's', 'z', 'l', 'm', 'n')
-            
-            if (len(tentativa_cortada) > 2 
-                and not nlp(tentativa_cortada)[0].is_oov 
-                and tentativa_cortada.endswith(terminacoes_validas)):
-                resultado = tentativa_cortada
-
-    # 4. Processamento em Cadeia: Diminutivo -> Aumentativo
-    # Primeiro remove diminutivos (ex: carrinhos -> carrinho -> carro)
-    resultado = remover_diminutivo(resultado)
-    
-    # Depois verifica aumentativos (ex: pezão -> pé, mas melão -> melão)
-    resultado = remover_aumentativo(resultado)
-
-    return resultado
+    pass
