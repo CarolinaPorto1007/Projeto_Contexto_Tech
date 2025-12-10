@@ -4,6 +4,7 @@ from gensim.models import KeyedVectors
 import unicodedata
 from datetime import datetime, timedelta
 import hashlib
+from spellchecker import SpellChecker
 
 # Arquivos auxiliares
 from routes import input_filter
@@ -233,6 +234,11 @@ PALAVRAS_TECNOLOGIA = [
     "unicast"
 ]
 
+spell = SpellChecker(language="pt")
+
+def is_valida(p):
+    return p.lower() in spell.word_frequency
+
 def normalizar_texto(texto):
     """Remove acentos e normaliza o texto para comparação"""
     texto = texto.lower().strip()
@@ -362,6 +368,24 @@ def inicializar_jogo():
     tentativas_historico = []
     
     print(f"🎮 Palavra do dia: {palavra_secreta} (Data: {data_palavra})")
+    i = 0
+    
+    palavras = set()
+
+    with open("saida.txt", "w", encoding="utf8") as f:
+        i = 0
+        for palavra, similaridade in word2vec.most_similar(palavra_secreta, topn=720000):
+            formatada = input_filter.formatar_palavra(palavra, False)
+
+            if is_valida(formatada) and formatada not in palavras:
+                i += 1
+                palavras.add(formatada)
+
+                linha = f"{i} - {formatada} - {similaridade * 100:.2f}\n"
+                f.write(linha)
+
+                print(linha, end="")
+
 
 def verificar_reset_diario():
     """Verifica se precisa resetar o jogo para um novo dia"""

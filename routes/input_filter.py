@@ -517,11 +517,11 @@ def padronizar_derivacoes(palavra):
 
 
 # FORMATANDO PALAVRA PARA EXIBIÇÃO NO FRONTEND
-def formatar_palavra(palavra):
+def formatar_palavra(palavra, inputUsuario = True):
     """
     Formata a palavra para exibição (primeira letra maiúscula).
     """
-    if not(palavra_existe(palavra)):
+    if not(palavra_existe(palavra)) and inputUsuario:
         return False
     
     palavra = padronizar_plural(palavra)
