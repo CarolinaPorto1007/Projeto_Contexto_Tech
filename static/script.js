@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Enter para enviar
     input.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !jogoFinalizado) {
+            e.preventDefault();
             button.click();
         }
     });
@@ -88,6 +89,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function adicionarTentativa(palavra, similaridade) {
         const div = document.createElement('div');
         div.className = 'tentativa-item';
+        
+        // 1. IMPORTANTE: Salvamos o score num atributo de dados para comparar depois
+        div.dataset.score = similaridade;
 
         const classe = getClasseScore(similaridade);
         const emoji = getEmojiTemperatura(similaridade);
@@ -99,7 +103,26 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        tentativas.insertBefore(div, tentativas.firstChild);
+        // 2. Lógica de Ordenação (Insertion Sort no DOM)
+        const itensExistentes = tentativas.children;
+        let inserido = false;
+
+        // Percorre a lista atual para achar onde o novo item se encaixa
+        for (let i = 0; i < itensExistentes.length; i++) {
+            const scoreItemAtual = parseFloat(itensExistentes[i].dataset.score);
+            
+            // Se a nova similaridade for MAIOR que a do item atual, insere antes dele
+            if (similaridade > scoreItemAtual) {
+                tentativas.insertBefore(div, itensExistentes[i]);
+                inserido = true;
+                break;
+            }
+        }
+
+        // 3. Se não achou ninguém com score menor (ou a lista está vazia), coloca no final
+        if (!inserido) {
+            tentativas.appendChild(div);
+        }
     }
 
     // Atualizar barra de progresso
