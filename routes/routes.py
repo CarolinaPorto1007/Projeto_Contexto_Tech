@@ -4,7 +4,9 @@ from gensim.models import KeyedVectors
 import unicodedata
 from datetime import datetime, timedelta
 import hashlib
+from wordfreq import zipf_frequency
 from spellchecker import SpellChecker
+import hunspell
 
 # Arquivos auxiliares
 from routes import input_filter
@@ -235,9 +237,27 @@ PALAVRAS_TECNOLOGIA = [
 ]
 
 spell = SpellChecker(language="pt")
+h = hunspell.HunSpell(
+    "base_palavras/pt_BR.dic",
+    "base_palavras/pt_BR.aff"
+)
 
-def is_valida(p):
-    return p.lower() in spell.word_frequency
+def esta_em_dicionario(palavra):
+    p = palavra.lower().strip()
+
+    # 1. wordfreq: aparece em corpora?
+    if zipf_frequency(p, "pt") > 0:
+        return p
+
+    # 2. pyspellchecker: está no dicionário interno?
+    if p in spell.word_frequency:
+        return p
+
+    # 3. hunspell: verificação ortográfica completa
+    if h.spell(p):
+        return p
+
+    return False
 
 def normalizar_texto(texto):
     """Remove acentos e normaliza o texto para comparação"""
@@ -288,6 +308,7 @@ def calcular_similaridade_cosseno(vetor1, vetor2):
     # Produto escalar normalizado
     similaridade = np.dot(vetor1, vetor2) / (norma1 * norma2)
     
+    similaridade = (similaridade / max_sim)
     # Converte para porcentagem e limita entre 0 e 100
     similaridade_pct = max(0, min(100, similaridade * 100))
     
@@ -356,6 +377,7 @@ data_palavra = None
 vetor_secreto = None
 jogo_finalizado = False
 tentativas_historico = []
+max_sim = None
 
 def inicializar_jogo():
     """Inicializa o jogo com a palavra do dia"""
@@ -372,21 +394,26 @@ def inicializar_jogo():
     
     palavras = set()
 
-    max_sim = None
+    global max_sim
+
+    for palavra, similaridade in word2vec.most_similar(palavra_secreta, topn=100):
+        print(f'{similaridade} - {palavra}')
 
     with open("saida.txt", "w", encoding="utf8") as f:
         i = 0
         for palavra, similaridade in word2vec.most_similar(palavra_secreta, topn=720000):
-            formatada = input_filter.formatar_palavra(palavra, False)
+            tentativa = input_filter.palavra_existe(palavra)
+            if tentativa != False:
+                tentativa = esta_em_dicionario(tentativa)
 
-            if is_valida(formatada) and formatada not in palavras:
+            if tentativa != False and tentativa not in palavras:
                 if (max_sim is None):
                     max_sim = similaridade
 
                 i += 1
-                palavras.add(formatada)
+                palavras.add(tentativa)
 
-                linha = f"{formatada}, {(similaridade/max_sim) * 100:.2f}\n"
+                linha = f"{tentativa}, {(similaridade/max_sim) * 100:.2f}\n"
                 f.write(linha)
 
                 # print(linha, end="")
@@ -427,8 +454,10 @@ def tentar():
     # Obtém a palavra tentada
     tentativa = request.json.get('palavra', '').lower().strip()
 
+    tentativa = input_filter.palavra_existe(tentativa)
+    if tentativa != False:
+        tentativa = esta_em_dicionario(tentativa)
 
-    tentativa = input_filter.formatar_palavra(tentativa)
     if tentativa == False:
         return jsonify({"erro": "Palavra desconhecida ou inválida! Verifique a ortografia."})
     
